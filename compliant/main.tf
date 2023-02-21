@@ -1,46 +1,46 @@
-resource "aws_s3_bucket" "foo-bucket" {
-  region        = var.region
-  bucket        = local.bucket_name
-  force_destroy = true
-
-  tags = {
-    Name = "foo-${data.aws_caller_identity.current.account_id}"
-  }
-  versioning {
-    enabled = true
-  }
-  logging {
-    target_bucket = "${aws_s3_bucket.log_bucket.id}"
-    target_prefix = "log/"
-  }
-  server_side_encryption_configuration {
-    rule {
-      apply_server_side_encryption_by_default {
-        kms_master_key_id = "${aws_kms_key.mykey.arn}"
-        sse_algorithm     = "aws:kms"
-      }
-    }
-  }
-  acl           = "private"
-  replication_configuration {
-    role = aws_iam_role.replication.arn
-    rules {
-      id     = "foobar"
-      prefix = "foo"
-      status = "Enabled"
-
-      destination {
-        bucket        = aws_s3_bucket.destination.arn
-        storage_class = "STANDARD"
-      }
-    }
-  }  
+resource "google_service_account" "default" {
+  account_id   = "447978713790-compute@developer.gserviceaccount.com"
+  display_name = "Service Account"
 }
-resource "aws_s3_bucket_public_access_block" "access_good_1" {
-  bucket = aws_s3_bucket.foo-bucket.id
 
-  block_public_acls   = true
-  block_public_policy = true
-  restrict_public_buckets = true
-  ignore_public_acls=true
+resource "google_compute_instance" "default" {
+  name         = "test"
+  machine_type = "f1-micro"
+  zone         = "us-central1-a"
+
+  tags = ["foo", "bar"]
+
+  boot_disk {
+    initialize_params {
+      image = "debian-cloud/debian-11"
+      labels = {
+        my_label = "value"
+      }
+    }
+  }
+
+  // Local SSD disk
+  scratch_disk {
+    interface = "SCSI"
+  }
+
+  network_interface {
+    network = "default"
+
+    access_config {
+      // Ephemeral public IP
+    }
+  }
+
+  metadata = {
+    foo = "bar"
+  }
+
+  metadata_startup_script = "echo hi > /test.txt"
+
+  service_account {
+    # Google recommends custom service accounts that have cloud-platform scope and permissions granted via IAM Roles.
+    email  = google_service_account.default.email
+    scopes = ["cloud-platform"]
+  }
 }
