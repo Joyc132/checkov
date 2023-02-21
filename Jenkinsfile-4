@@ -1,6 +1,6 @@
 pipeline {
-  agent any {
-    kubernetes {
+  agent {
+    label kubernetes {
       yaml '''
 apiVersion: v1
 kind: Pod
